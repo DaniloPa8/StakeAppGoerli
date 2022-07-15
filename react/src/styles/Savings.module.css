@@ -1,0 +1,132 @@
+.open_savings {
+  grid-column: 1;
+  grid-row: span 2;
+  border-right: 0.5rem solid black;
+  border-bottom: 0.5rem solid black;
+  border-radius: 20px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr 1fr 1fr;
+  justify-items: center;
+  background-color: rgba(128, 0, 128, 0.1);
+}
+.input {
+  text-align: center;
+  font-family: inherit;
+  width: 80%;
+  grid-column: span 2;
+  border: 0.3rem solid black;
+  border-radius: 30px;
+  margin-top: 1%;
+}
+::-webkit-input-placeholder {
+  color: black;
+  font-weight: 500;
+}
+.submit {
+  border: 0.2rem solid black;
+  border-radius: 10px;
+  height: 80%;
+  width: 50%;
+  margin-top: 1%;
+  font-family: inherit;
+  cursor: pointer;
+  grid-column: 2;
+}
+.close {
+  border: 0.1rem solid black;
+  border-radius: 10px;
+  height: 80%;
+  width: 50%;
+  margin-top: 1%;
+  font-family: inherit;
+  margin-bottom: 1%;
+  color: white;
+  background-color: black;
+  cursor: pointer;
+  grid-column: 1;
+}
+.submit:hover {
+  background-color: rgba(16, 0, 110, 0.3);
+}
+.close:active {
+  background-color: silver(255, 215, 0, 0.5);
+  box-shadow: 0 5px #666;
+  transform: translateY(4px);
+}
+.submit:active {
+  background-color: rgb(128, 0, 128);
+  box-shadow: 0 5px #666;
+  transform: translateY(4px);
+}
+.title {
+  margin-top: 1%;
+  display: flex;
+  align-items: center;
+  text-decoration: underline;
+  text-decoration: gold;
+  cursor: default;
+  grid-column: 1;
+  padding: 5%;
+  border-right: solid gold 0.2rem;
+  border-bottom: solid rgb(255, 215, 0) 0.2rem;
+  border-radius: 20px;
+}
+.text {
+  margin-top: 1%;
+  display: flex;
+  align-items: center;
+  text-decoration: underline;
+  text-decoration: silver;
+  cursor: default;
+  margin: none;
+  grid-column: 2;
+  padding: 5%;
+  border-left: solid purple 0.2rem;
+  border-bottom: solid rgb(128, 0, 128) 0.2rem;
+  border-radius: 20px;
+}
+
+.choosenL {
+  background-color: rgba(255, 215, 0, 0.3);
+}
+.choosenR {
+  background-color: rgba(128, 0, 128, 0.3);
+}
+.animate_fade {
+  animation-duration: 0.5s;
+  animation-name: animate-fade;
+  animation-delay: 0.5s;
+  animation-fill-mode: backwards;
+}
+
+@keyframes animate-fade {
+  0% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+@media screen and (max-width: 1000px) {
+  .open_savings {
+    margin-top: 2.5%;
+    font-size: 2.5vw;
+    grid-column: 1;
+    grid-row: 1;
+    border-right: 0;
+    border-top: 5px solid black;
+  }
+  .input,
+  .submit,
+  .close {
+    font-size: 2.5vw;
+  }
+  .submit,
+  .close {
+    width: 80%;
+  }
+}
