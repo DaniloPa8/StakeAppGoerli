@@ -17,6 +17,8 @@
  * phrase from a file you've .gitignored so it doesn't accidentally become public.
  *
  */
+const HDWalletProvider = require("@truffle/hdwallet-provider");
+require("dotenv").config;
 
 // const HDWalletProvider = require('@truffle/hdwallet-provider');
 // const infuraKey = "fj4jll3k.....";
@@ -46,6 +48,19 @@ module.exports = {
       host: "127.0.0.1", // Localhost (default: none)
       port: 7545, // Standard Ethereum port (default: none)
       network_id: 1337, // Any network (default: none)
+    },
+    goerli: {
+      provider: () => {
+        return new HDWalletProvider(
+          "screen romance crop sauce river antenna only banana hair change radar avoid",
+          `wss://goerli.infura.io/ws/v3/` + "ef6c9e371703467fa91e5283048dfb70"
+        );
+      },
+      network_id: "5",
+      gas: 4465030,
+      gasPrice: 10000000000,
+      networkCheckTimeoutnetworkCheckTimeout: 10000,
+      timeoutBlocks: 200,
     },
     // Another network with more advanced options...
     // advanced: {

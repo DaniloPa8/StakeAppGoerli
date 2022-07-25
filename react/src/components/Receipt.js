@@ -1,13 +1,20 @@
 import React from "react";
 import classes from "./../styles/Receipt.module.css";
+
 import web3 from "web3";
+
 import { useDispatch, useSelector } from "react-redux";
 
 const txData = (state) => state.data.txData;
 
 const Receipt = (props) => {
   const dispatch = useDispatch();
-  const txDataObj = useSelector(txData); // getting the tx data from redux
+
+  //setting Redux states with the Selector
+
+  const txDataObj = useSelector(txData);
+
+  // Helper for closing and reseting receipt
 
   const close = () => {
     dispatch({ type: "control/closeReceipt" });
@@ -38,9 +45,9 @@ const Receipt = (props) => {
               <p>{txDataObj.plan && `Plan: ${txDataObj.plan}`}</p>
 
               <p>
-                {txDataObj.value &&
+                {txDataObj.depositedValue &&
                   `Inital deposit value: ${web3.utils.fromWei(
-                    txDataObj.value,
+                    txDataObj.depositedValue,
                     "ether"
                   )} SAT Tokens`}
               </p>
@@ -100,6 +107,38 @@ const Receipt = (props) => {
                     txDataObj.giveawayValue
                   )} SAT Tokens.`}
               </p>
+
+              <p>
+                {txDataObj.value &&
+                  `Allowance value: ${web3.utils.fromWei(
+                    txDataObj.value
+                  )} SAT Tokens.`}
+              </p>
+
+              <p>
+                {txDataObj.fundedValue &&
+                  `You have funded the contract with:
+                ${web3.utils.fromWei(txDataObj.fundedValue)} SAT Tokens.`}
+              </p>
+
+              <p>
+                {txDataObj.giveawayAmount &&
+                  `You have withdrawn ${web3.utils.fromWei(
+                    txDataObj.giveawayAmount
+                  )} tokens from giveaway pool`}
+              </p>
+
+              <p>{txDataObj.message}</p>
+              {/* LINK TO ETHSCAN  */}
+              {txDataObj.txHash && (
+                <a
+                  className={classes.etherscan_link}
+                  target="_blank"
+                  href={`https://goerli.etherscan.io/tx/${txDataObj.txHash}`}
+                >
+                  Click here to see transaction details on Etherscan
+                </a>
+              )}
             </main>
           </div>
         </>

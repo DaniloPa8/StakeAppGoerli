@@ -1,18 +1,25 @@
 import React, { useContext } from "react";
 import classes from "./../styles/Withdraw.module.css";
+
 import ConnContext from "./Conn-context";
+
 import TermSelector from "./TermSelector";
+
+import { checkIsStaker, dispatchError, fireInputError } from "../utils/utils";
+import sendTransaction from "../utils/sendTransaction";
+
 import { useDispatch, useSelector } from "react-redux";
-import { dispatchError, dispatchResult } from "../utils";
 
 const selectLoading = (state) => state.control.loading;
 
 const Withdraw = (props) => {
   const dispatch = useDispatch();
 
+  //setting Redux states with the Selector
+
   const loading = useSelector(selectLoading);
 
-  const { account, tsavings, isavings } = useContext(ConnContext);
+  const { account, tsavings, isavings } = useContext(ConnContext); // consuming the context
 
   // function making a call to blockchain backend for withdrawing funds
 
@@ -22,13 +29,12 @@ const Withdraw = (props) => {
 
       let target = props.term ? tsavings : isavings;
 
-      let res = await target.methods
-        .withdrawDeposit()
-        .send({ from: account, gas: 30000000 });
+      if (!(await checkIsStaker(target, account)))
+        fireInputError("You are not a registered staker.");
 
-      res = res.events.LogWthDeposit.returnValues;
+      let action = await target.methods.withdrawDeposit();
 
-      dispatchResult(JSON.stringify(res));
+      sendTransaction(action, target, account);
     } catch (err) {
       dispatchError(err.reason);
     }

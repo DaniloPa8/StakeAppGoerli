@@ -80,10 +80,29 @@
   .title2 {
     margin-left: 3%;
   }
+  .title1 {
+    white-space: nowrap;
+    margin-top: 5%;
+  }
+  .title1,
+  .title2 {
+    font-size: 6vw;
+  }
   .welcome_content {
     font-size: 3vw;
   }
   .button {
     font-size: 7vw;
+  }
+  .title2 {
+    margin-top: 4%;
+  }
+}
+@media screen and (max-height: 600px) {
+  .welcome_content {
+    font-size: 1.5vw;
+  }
+  .button {
+    font-size: 3vw;
   }
 }

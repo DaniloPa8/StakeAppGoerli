@@ -1,0 +1,154 @@
+.overlay {
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.9);
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 10;
+}
+
+.text {
+  text-decoration: underline;
+  text-decoration-color: red;
+  text-align: center;
+}
+
+.modal {
+  position: fixed;
+  z-index: 20;
+  background: #fff;
+  width: 35%;
+  height: flex;
+  border-radius: 45px;
+
+  /* Center the modal */
+  top: 50%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-50%);
+}
+
+.modal__header {
+  background: rgba(255, 215, 0, 0.5);
+  padding: 10px 20px;
+  display: flex;
+  justify-content: space-between;
+  color: rgba(128, 0, 128, 1);
+  border-top-right-radius: 40px;
+  border-top-left-radius: 40px;
+  border-bottom: solid black 5px;
+}
+
+.modal__main {
+  padding: 20px;
+  display: grid;
+  grid-template-rows: 2fr 2fr 2fr 1fr;
+  grid-template-columns: 1fr;
+  align-items: center;
+  justify-content: center;
+  text-align: justify;
+  justify-items: center;
+  align-content: center;
+  font-size: 1vw;
+  font-family: inherit;
+}
+
+.closeButton {
+  border: none;
+  background: transparent;
+  padding: 10px;
+  cursor: pointer;
+  color: red;
+  font-size: 3vw;
+  grid-column: span 2;
+}
+.text {
+  grid-column: 1;
+  font-family: inherit;
+  text-decoration: none;
+}
+.socials {
+  grid-row: 4;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+.icon1 {
+  font-size: 3em;
+  grid-column: 1;
+  cursor: pointer;
+}
+
+.icon2 {
+  font-size: 3em;
+  cursor: pointer;
+}
+.icon1:hover,
+.icon2:hover {
+  color: rgba(128, 0, 128, 1);
+}
+.icon1:active,
+.icon2:active {
+  color: gold;
+}
+p {
+  margin-block: 0.3vw;
+}
+
+.animate_show {
+  -webkit-animation: pop-swirl 1s ease forwards; /*trigger the keyframe*/
+  visibility: visible;
+  z-index: 200;
+  opacity: 1;
+}
+.animate_show ~ #overlay {
+  opacity: 1;
+  visibility: visible;
+  z-index: 100;
+}
+
+@keyframes pop-swirl {
+  0% {
+    transform: scale(0) rotate(360deg) translate(0, 0);
+    transform-origin: 0 0;
+  }
+  60% {
+    transform: scale(0.8) rotate(-10deg) translate(-25%, -25%);
+    transform-origin: 0 0;
+  }
+  100% {
+    transform: scale(1) rotate(0deg) translate(-50%, -50%);
+    transform-origin: 0 0;
+  }
+}
+
+.closeButton:hover {
+  color: red;
+}
+@media screen and (max-width: 1000px) {
+  .modal {
+    width: 80%;
+    height: auto;
+  }
+  .modal__header {
+    height: auto;
+    font-size: 4vw;
+  }
+  .closeButton {
+    font-size: 10vw;
+    padding: 2px;
+  }
+  .modal__main {
+    font-size: 3vw;
+  }
+}
+@media screen and (max-height: 600px) {
+  .modal__main {
+    font-size: 1.5vw;
+  }
+  .modal__header {
+    font-size: 2vw;
+  }
+  .closeButton {
+    font-size: 4vw;
+  }
+}

@@ -46,6 +46,7 @@
   text-align: justify;
   justify-items: center;
   align-content: center;
+  font-size: 1vw;
 }
 
 .closeButton {
@@ -106,7 +107,7 @@ p {
     padding: 2px;
   }
   .modal__main {
-    font-size: 3vw;
+    font-size: 2.6vw;
   }
 }
 @media screen and (max-height: 600px) {

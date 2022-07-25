@@ -1,26 +1,13 @@
 .main_frame {
   display: grid;
   grid-template-rows: auto 5fr auto;
-  grid-template-columns: 1fr;
+  grid-template-columns: 1fr 6fr;
   height: 100%;
   font-family: "Montserrat Alternates", sans-serif;
   overflow: hidden;
   font-size: 1vw;
 }
-.header {
-  grid-row: 1;
-  border-bottom: 0.5rem solid black;
-  border-bottom-left-radius: 2rem;
-  border-bottom-right-radius: 2rem;
-  width: 100%;
-  background-color: rgba(255, 215, 0, 0.2);
-  font-family: inherit;
 
-  display: grid;
-  grid-template-columns: 1fr 3fr 1fr;
-  justify-items: center;
-  align-items: center;
-}
 .manual {
   grid-column: 1;
   border: 0.2rem solid black;
@@ -45,21 +32,7 @@
   background-color: transparent;
   cursor: pointer;
 }
-.footer {
-  grid-row: 3;
-  border-top: 0.5rem solid black;
-  border-top-left-radius: 2rem;
-  border-top-right-radius: 2rem;
-  background-color: rgba(128, 0, 128, 0.15);
-  width: 100%;
 
-  font-family: inherit;
-
-  display: grid;
-  grid-template-columns: 1fr 3fr 1fr;
-  justify-items: center;
-  align-items: center;
-}
 .owner {
   grid-column: 1;
   border: 0.2rem solid black;
@@ -99,23 +72,18 @@
   text-decoration: none;
 }
 
-.header_title,
-.footer_title {
-  font-family: inherit;
-  margin-bottom: 3%;
-  grid-column: 2;
-  text-decoration: underline;
-  cursor: default;
-}
-
 .main_content {
   display: grid;
   grid-template-columns: 1fr 1fr;
   grid-template-rows: repeat(4, 1fr);
   height: 100%;
   grid-row: 2;
+  grid-column: 2;
+  font-size: 1.5vw;
 }
 .start_savings {
+  display: grid;
+  grid-template-rows: 4;
   grid-row: 1;
   grid-column: 1;
   border-radius: 90px;
@@ -168,6 +136,11 @@
   justify-content: center;
   cursor: pointer;
 }
+.loading_overlay_content {
+  position: absolute;
+  top: 45%;
+  left: 45%;
+}
 
 .animate_fade {
   animation-duration: 0.5s;
@@ -197,12 +170,21 @@
   }
   .main_frame {
     font-size: 1vw;
-    grid-template-rows: 1fr 9fr 1fr;
+    grid-template-columns: 1fr 5fr;
   }
-  .footer_title,
-  .header_title {
-    font-size: 4vw;
+  .main_frame_menu_open {
+    display: grid;
+    grid-template-columns: 2fr 3fr;
+    grid-template-rows: auto 5fr auto;
+    height: 100%;
+    font-family: "Montserrat Alternates", sans-serif;
+    overflow: hidden;
+    font-size: 1vw;
   }
+  .main_content {
+    grid-column: span 2;
+  }
+
   .log_out,
   .owner,
   .manual,
@@ -231,13 +213,26 @@
   .get_savings {
     grid-row: 4;
   }
-  .footer {
-    height: 100%;
-    grid-template-columns: 1fr 1.5fr 1fr;
+
+  .start_savings {
+    background-color: rgba(128, 0, 128, 0.15);
+    border-top: solid black 0.2rem;
+    border-bottom: solid black 0.2rem;
   }
-  .header {
-    height: 100%;
-    grid-template-columns: 1fr 1.5fr 1fr;
+  .stop_savings {
+    background-color: rgba(255, 215, 0, 0.15);
+    border-top: solid black 0.2rem;
+    border-bottom: solid black 0.2rem;
+  }
+  .get_savings {
+    background-color: rgba(255, 215, 0, 0.15);
+    border-top: solid black 0.2rem;
+    border-bottom: solid black 0.2rem;
+  }
+  .withdraw_savings {
+    background-color: rgba(128, 0, 128, 0.15);
+    border-top: solid black 0.2rem;
+    border-bottom: solid black 0.2rem;
   }
 }
 @media screen and (max-height: 600px) {

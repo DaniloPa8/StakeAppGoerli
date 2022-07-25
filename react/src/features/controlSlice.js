@@ -6,13 +6,24 @@ import { createSlice } from "@reduxjs/toolkit";
 
 const controlSlice = createSlice({
   name: "control",
-  initialState: { loading: false, receiptOpen: false, errorOpen: false },
+  initialState: {
+    loading: false,
+    receiptOpen: false,
+    errorOpen: false,
+    waitingForInput: false,
+  },
   reducers: {
     startLoading: (state) => {
       state.loading = true;
     },
     stopLoading: (state) => {
       state.loading = false;
+    },
+    startWaitingForInput: (state) => {
+      state.waitingForInput = true;
+    },
+    stopWaitingForInput: (state) => {
+      state.waitingForInput = false;
     },
     openReceipt: (state) => {
       state.receiptOpen = true;
@@ -32,6 +43,8 @@ const controlSlice = createSlice({
 export const {
   startLoading,
   stopLoading,
+  startWaitingForInput,
+  stoptWaitingForInput,
   openReceipt,
   closeReceipt,
   openError,

@@ -1,11 +1,15 @@
-import react, { useState } from "react";
+import { useState } from "react";
 import classes from "./../styles/WelcomeScreen.module.css";
+
 import Dashboard from "./Dashboard";
-import logo from "./../logo.png";
-import { dispatchError } from "../utils";
+
+import logo from "./../images/logo2.png";
+
+import { dispatchError } from "../utils/utils";
 
 const WelcomeScreen = (props) => {
   const [connected, setIsConnected] = useState(false); // state for managing if the user has connected his waller
+
   // connecting Metamask
 
   const connMetamask = async () => {
@@ -19,6 +23,8 @@ const WelcomeScreen = (props) => {
       } catch (error) {
         dispatchError("9000 | User has not connected the account");
       }
+    } else {
+      props.setMobile(true);
     }
   };
 
@@ -33,13 +39,24 @@ const WelcomeScreen = (props) => {
 
           <img src={logo} className={classes.image} />
 
-          <h3 className={classes.text}>
-            Please connect your Metamask wallet to continue
-          </h3>
+          {!props.mobile && (
+            <h3 className={classes.text}>
+              Please connect your Metamask wallet to continue
+            </h3>
+          )}
+          {props.mobile && (
+            <h3 className={classes.text}>
+              YOU NEED TO USE A ETHEREUM-ENEABLED BROWSER EG. METAMASK BROWSER
+            </h3>
+          )}
 
-          <div className={classes.button} onClick={connMetamask}>
+          <button
+            className={classes.button}
+            onClick={connMetamask}
+            disabled={props.mobile}
+          >
             CONNECT
-          </div>
+          </button>
         </div>
       </div>
     );

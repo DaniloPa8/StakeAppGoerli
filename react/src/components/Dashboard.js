@@ -17,6 +17,7 @@ import LoadingOverlay from "react-loading-overlay";
 import Circle from "react-spinners/CircleLoader";
 import Receipt from "./Receipt";
 import Token from "./Token";
+import Sidebar from "./Sidebar";
 
 // -----------------
 
@@ -27,6 +28,9 @@ import { useSelector } from "react-redux";
 const selectLoading = (state) => state.control.loading;
 const selectReceipt = (state) => state.control.receiptOpen;
 const selectError = (state) => state.control.errorOpen;
+const selectInput = (state) => state.control.waitingForInput;
+
+// Component
 
 const Dashboard = () => {
   //setting Redux states with the Selector
@@ -34,6 +38,7 @@ const Dashboard = () => {
   const loading = useSelector(selectLoading);
   const openError = useSelector(selectError);
   const openReceipt = useSelector(selectReceipt);
+  const waitingForInput = useSelector(selectInput);
 
   // Consuming the context
 
@@ -45,6 +50,7 @@ const Dashboard = () => {
   const [manualOpen, setManualOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [tokenOpen, setTokenOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   // Setting the main div's state
 
@@ -54,81 +60,93 @@ const Dashboard = () => {
 
   const [isOwner, setIsOwner] = useState(false);
 
-  // State for defining with wich contract to interact
+  // State for defining with witch contract to interact
 
   const [term, setTerm] = useState(true);
 
   // UseEffect for checking if the current user is owner
 
-  useEffect(() => async () => {
-    let towner = await tsavings.methods.owner().call({ from: account });
-
-    if (towner.toLowerCase() === account.toLowerCase()) setIsOwner(true);
-  });
+  useEffect(() => {
+    if (
+      process.env.REACT_APP_OWNER_ADDR.toLowerCase() === account.toLowerCase()
+    )
+      setIsOwner(true);
+  }, []);
 
   // Savings section
 
   const savingsOpenHandler = () => {
     setSelectedSection(1);
+    if (menuOpen) setMenuOpen(false);
   };
-  const savingsCloseHandler = () => setSelectedSection(0);
 
   // Withdraw section
   const withdrawOpenHandler = () => {
     setSelectedSection(2);
+    if (menuOpen) setMenuOpen(false);
   };
-  const withdrawCloseHandler = () => setSelectedSection(0);
 
   // Stop savings section
 
   const stopOpenHandler = () => {
     setSelectedSection(3);
+    if (menuOpen) setMenuOpen(false);
   };
-  const stopCloseHandler = () => setSelectedSection(0);
 
   // Get savings section
   const getOpenHandler = () => {
     setSelectedSection(4);
+    if (menuOpen) setMenuOpen(false);
   };
-  const getCloseHandler = () => setSelectedSection(0);
+  // Close handler
+  const closeMainHandler = () => setSelectedSection(0);
 
   // Owner panel section
-
-  const openOwnerHandler = () => setOwnerOpen(true);
-  const closeOwnerHandler = () => setOwnerOpen(false);
+  const ownerHandler = () => setOwnerOpen((prev) => !prev);
 
   // Token panel section
-
-  const openTokenHandler = () => setTokenOpen(true);
-  const closeTokenHandler = () => setTokenOpen(false);
+  const tokenHandler = () => setTokenOpen((prev) => !prev);
 
   // Manual modal section
-
-  const openManualHandler = () => setManualOpen(true);
-  const closeManualHandler = () => setManualOpen(false);
+  const manualHandler = () => setManualOpen((prev) => !prev);
 
   // About modal section
+  const aboutHandler = () => setAboutOpen((prev) => !prev);
 
-  const aboutCloseHandler = () => setAboutOpen(false);
-  const aboutOpenHandler = () => setAboutOpen(true);
+  //Mobile menu
+  const menuHandler = () => {
+    setMenuOpen((prev) => !prev);
+    closeMainHandler();
+  };
 
   return (
-    <LoadingOverlay active={loading} spinner={<Circle />}>
-      <div className={classes.main_frame}>
-        {/* Header */}
-
-        <div className={classes.header}>
-          <button className={classes.manual} onClick={openManualHandler}>
-            Savings manual
-          </button>
-
-          <h1 className={classes.header_title}>StakeApp</h1>
-          <button className={classes.about_us} onClick={aboutOpenHandler}>
-            About us
-          </button>
-        </div>
+    // Overlay
+    <LoadingOverlay
+      active={loading}
+      spinner={<Circle className={classes.loading_overlay_content} />}
+      text={`${
+        waitingForInput
+          ? "Waiting for user to sign the transaction..."
+          : "Waiting for transaction execution on blockchain. Please wait..."
+      }`}
+      className="_loading_overlay_spinner"
+    >
+      <div
+        className={menuOpen ? classes.main_frame_menu_open : classes.main_frame}
+      >
+        {/* Sidebar */}
+        <Sidebar
+          menuHandler={menuHandler}
+          ownerHandler={ownerHandler}
+          tokenHandler={tokenHandler}
+          aboutHandler={aboutHandler}
+          manualHandler={manualHandler}
+          menuOpen={menuOpen}
+          isOwner={isOwner}
+        />
 
         {/* Main */}
+
         {/* Savings section */}
         <div className={classes.main_content}>
           {selectedSection != 1 && (
@@ -141,7 +159,7 @@ const Dashboard = () => {
           )}
           {selectedSection === 1 && (
             <Savings
-              closeSavings={savingsCloseHandler}
+              closeSavings={closeMainHandler}
               setTerm={setTerm}
               term={term}
               openReceipt={openReceipt}
@@ -159,7 +177,7 @@ const Dashboard = () => {
           )}
           {selectedSection === 2 && (
             <Withdraw
-              closeWithdraw={withdrawCloseHandler}
+              closeWithdraw={closeMainHandler}
               setTerm={setTerm}
               term={term}
             />
@@ -168,15 +186,16 @@ const Dashboard = () => {
           {/* Owner modal section */}
           {ownerOpen && (
             <OwnerPanel
-              closeModal={closeOwnerHandler}
+              closeModal={ownerHandler}
               isOpen={ownerOpen}
               setTerm={setTerm}
               term={term}
             />
           )}
+          {/* Token modal section */}
           {tokenOpen && (
             <Token
-              closeModal={closeTokenHandler}
+              closeModal={tokenHandler}
               isOpen={tokenOpen}
               setTerm={setTerm}
               term={term}
@@ -185,12 +204,12 @@ const Dashboard = () => {
 
           {/* Manual modal section */}
           {manualOpen && (
-            <Manual closeModal={closeManualHandler} isOpen={manualOpen} />
+            <Manual closeModal={manualHandler} isOpen={manualOpen} />
           )}
 
           {/* AboutUs modal section */}
           {aboutOpen && (
-            <AboutUs closeModal={aboutCloseHandler} isOpen={aboutOpen} />
+            <AboutUs closeModal={aboutHandler} isOpen={aboutOpen} />
           )}
 
           {/* Stop savings section */}
@@ -202,7 +221,7 @@ const Dashboard = () => {
               <p>Stop savings</p>
             </div>
           )}
-          {selectedSection === 3 && <Stop closeStop={stopCloseHandler} />}
+          {selectedSection === 3 && <Stop closeStop={closeMainHandler} />}
 
           {/* Get savings section */}
           {selectedSection != 4 && (
@@ -215,7 +234,7 @@ const Dashboard = () => {
           )}
           {selectedSection === 4 && (
             <GetSavings
-              closeGetSavings={getCloseHandler}
+              closeGetSavings={closeMainHandler}
               setTerm={setTerm}
               term={term}
             />
@@ -226,28 +245,6 @@ const Dashboard = () => {
             <Receipt title="Succesful Transaction" isOpen={openReceipt} />
           )}
           {openError && <Error isOpen={openError} term={term} />}
-        </div>
-
-        {/* Footer */}
-        <div className={classes.footer}>
-          {isOwner && (
-            <button className={classes.owner} onClick={openOwnerHandler}>
-              Owner panel
-            </button>
-          )}
-          {!isOwner && (
-            <button className={classes.owner} onClick={openTokenHandler}>
-              Token
-            </button>
-          )}
-
-          <h2 className={classes.footer_title}>StakeApp Ⓒ</h2>
-          <button
-            className={classes.log_out}
-            onClick={() => window.location.reload(false)}
-          >
-            Log out
-          </button>
         </div>
       </div>
     </LoadingOverlay>

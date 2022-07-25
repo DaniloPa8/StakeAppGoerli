@@ -1,81 +1,74 @@
-import React, { useRef, useContext } from "react";
+import React, { useState, useContext } from "react";
 import classes from "./../styles/Savings.module.css";
-import ConnContext from "./Conn-context";
-import web3 from "web3";
-import errors from "web3-core-helpers";
-import { dispatchError, dispatchResult, checkInputs } from "../utils";
-import { useDispatch, useSelector } from "react-redux";
+
 import TermSelector from "./TermSelector";
 
-const inputError = errors.errors.RevertInstructionError; // web3-core-helpers errors to get uniform errors accross the whole app
+import ConnContext from "./Conn-context";
+
+import web3 from "web3";
+
+import {
+  dispatchError,
+  checkInputs,
+  checkBalance,
+  checkAllowance,
+  fireInputError,
+  checkIsStaker,
+} from "../utils/utils";
+import sendTransaction from "../utils/sendTransaction";
+
+import { useDispatch, useSelector } from "react-redux";
+
 const selectLoading = (state) => state.control.loading;
 
 const Savings = (props) => {
-  // loading context
+  //setting Redux states with the Selector
 
   const loading = useSelector(selectLoading);
 
-  const { account, tsavings, isavings } = useContext(ConnContext);
+  const { account, tsavings, isavings, token } = useContext(ConnContext); // consuming context
 
-  // setting state
   const dispatch = useDispatch();
 
-  // setting input ref's
-  const planRef = useRef();
-  const valueRef = useRef();
+  // setting input states
+  const [planState, setPlanState] = useState();
+  const [valueState, setValueState] = useState();
 
-  // function making a call to blockchain backend for starting Term savings
+  // helper for reseting state
 
-  const startTerm = async () => {
-    try {
-      dispatch({ type: "control/startLoading" });
-
-      let amount = valueRef.current.value;
-      let plan = planRef.current.value;
-
-      if (!checkInputs(amount, plan))
-        throw inputError("Invalid inputs.", "Error(String)");
-
-      amount = web3.utils.toWei(amount, "ether");
-
-      let res = await tsavings.methods
-        .newDeposit(plan, amount)
-        .send({ from: account, gas: 300000 });
-      res = res.events.LogNewDeposit.returnValues;
-
-      dispatchResult(JSON.stringify(res));
-    } catch (err) {
-      dispatchError(err.reason);
-    }
-
-    planRef.current.value = null;
-    valueRef.current.value = null;
+  const resetState = () => {
+    setPlanState("");
+    setValueState("");
   };
 
-  // function making a call to blockchain backend for starting Indefinite savings
+  // function making a call to blockchain backend for starting savings
 
-  const startIndefinite = async () => {
+  const startSavings = async () => {
+    let target = props.term ? tsavings : isavings;
     try {
       dispatch({ type: "control/startLoading" });
 
-      let amount = valueRef.current.value;
+      if (await checkIsStaker(target, account))
+        fireInputError("You are already a staker!");
+      if (!checkInputs(valueState, planState))
+        fireInputError("Invalid inputs.");
+      if (!(await checkBalance(valueState, account, token)))
+        fireInputError("Insufficient balance of user account.");
+      if (!(await checkAllowance(valueState, account, token, target._address)))
+        fireInputError(
+          "Insufficient allowance of user account to the contract."
+        );
 
-      if (!checkInputs(amount))
-        throw inputError("Invalid inputs.", "Error(String)");
-
-      amount = web3.utils.toWei(amount, "ether");
-
-      let res = await isavings.methods
-        .newDeposit(amount)
-        .send({ from: account, gas: 300000 });
-      res = res.events.LogNewDeposit.returnValues;
-
-      dispatchResult(JSON.stringify(res));
+      let amount = web3.utils.toWei(valueState, "ether");
+      let action;
+      if (props.term) action = tsavings.methods.newDeposit(planState, amount);
+      if (!props.term) action = isavings.methods.newDeposit(amount);
+      sendTransaction(action, target, account);
     } catch (err) {
       dispatchError(err.reason);
     }
 
-    valueRef.current.value = null;
+    resetState();
   };
 
   return (
@@ -89,7 +82,8 @@ const Savings = (props) => {
           max="3"
           type="number"
           step="1"
-          ref={planRef}
+          value={planState}
+          onChange={(e) => setPlanState(e.target.value)}
           className={classes.input}
         ></input>
       )}
@@ -101,7 +95,8 @@ const Savings = (props) => {
         type="number"
         step="0.01"
         className={classes.input}
-        ref={valueRef}
+        value={valueState}
+        onChange={(e) => setValueState(e.target.value)}
       ></input>
 
       <button
@@ -114,7 +109,7 @@ const Savings = (props) => {
       <button
         disabled={loading}
         className={classes.submit}
-        onClick={() => (props.term ? startTerm() : startIndefinite())}
+        onClick={startSavings}
       >
         Start savings
       </button>

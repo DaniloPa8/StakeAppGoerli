@@ -1,134 +1,144 @@
-import React, { useContext, useRef } from "react";
+import React, { useContext, useState, useEffect } from "react";
+
 import classes from "./../styles/OwnerPanel.module.css";
+
 import ConnContext from "./Conn-context";
+
 import web3 from "web3";
+
 import TermSelector from "./TermSelector";
-import errors from "web3-core-helpers";
-import { dispatchError, dispatchResult, checkInputs } from "../utils";
+
 import { useDispatch, useSelector } from "react-redux";
 
+import { dispatchError, fireInputError, normalizeNumber } from "../utils/utils";
+import sendTransaction from "./../utils/sendTransaction";
+
 const selectLoading = (state) => state.control.loading;
-const inputError = errors.errors.RevertInstructionError; // loading up error from web3-core-helpers to have uniform error format across the whole app
 
 const OwnerPanel = (props) => {
   const dispatch = useDispatch();
 
+  //setting Redux states with the Selector
+
   const loading = useSelector(selectLoading);
+
+  // Consuming the context
 
   const { account, tsavings, isavings, token } = useContext(ConnContext);
 
-  const depositRef = useRef();
-  const withdrawRef = useRef(); // defininf the Ref's for inputs
-  const withAddrRef = useRef();
+  // Setting states for input values
 
-  // function for calling the blockchain backend and funding the contract
+  const [inputAmount, setInputAmount] = useState();
+  const [withdraw, setWithdraw] = useState();
+  const [withAddr, setWithAddr] = useState();
 
-  const fundContract = async () => {
+  // Setting states for checking values
+
+  const [giveawayPool, setGiveawayPool] = useState();
+  const [balance, setBalance] = useState();
+
+  // reset checked values when props.term changes
+
+  useEffect(() => {
+    setBalance("");
+  }, [props.term]);
+  // Helper for state reset
+
+  const resetState = () => {
+    setInputAmount("");
+    setWithAddr("");
+    setWithdraw("");
+  };
+
+  // function for calling the blockchain backend and funding & withdrawing from the contract
+
+  const fundAndWithdraw = async (selector) => {
     let target = props.term ? tsavings : isavings;
 
     try {
       dispatch({ type: "control/startLoading" });
 
-      let amount = depositRef.current.value;
+      let action, amount;
 
-      amount = web3.utils.toWei(amount, "ether");
+      if (selector === "withdraw") {
+        if (!withdraw) fireInputError("No amount input.");
+        amount = web3.utils.toWei(withdraw, "ether");
 
-      let res = await target.methods
-        .fundContract(amount)
-        .send({ from: account });
+        if (withAddr.length != 42) fireInputError("Invalid address inputs.");
 
-      res = res.events.LogOwnerDeposit.returnValues;
+        action = target.methods.withdrawContractFunds(
+          withAddr.toString(),
+          amount
+        );
+      }
+      if (selector === "deposit") {
+        amount = web3.utils.toWei(inputAmount, "ether");
 
-      dispatchResult(JSON.stringify(res));
+        //Quick check for token balance for easy error handling
+        let balance = await token.methods
+          .balanceOf(account)
+          .call({ from: account });
+
+        if (amount > balance)
+          fireInputError("Insufficent balance of user account.");
+
+        action = target.methods.fundContract(amount);
+      }
+
+      await sendTransaction(action, target, account);
     } catch (err) {
       dispatchError(err.reason);
     }
-    depositRef.current.value = "";
+    resetState();
   };
-  // function for calling the blockchain backend and withdrawing funds from contract
 
-  const withdrawFunds = async () => {
-    let target = props.term ? tsavings : isavings;
-
-    try {
-      dispatch({ type: "control/startLoading" });
-
-      let amount = withdrawRef.current.value;
-
-      if (!checkInputs(amount))
-        throw inputError("Invalid inputs.", "Error(String)");
-
-      amount = web3.utils.toWei(amount, "ether");
-
-      let addr = withAddrRef.current.value;
-
-      if (addr.length != 42)
-        throw inputError("Invalid address inputs.", "Error(String)");
-
-      let res = await target.methods
-        .withdrawContractFunds(addr.toString(), amount)
-        .send({ from: account });
-
-      res = res.events.LogOwnerWithdraw.returnValues;
-
-      dispatchResult(JSON.stringify(res));
-    } catch (err) {
-      dispatchError(err.reason);
-    }
-    withdrawRef.current.value = "";
-    withAddrRef.current.value = "";
-  };
+  // Function giving max allowance to the contract from the owner
 
   const giveAllowance = async () => {
     try {
       dispatch({ type: "control/startLoading" });
       let allowance = web3.utils.toWei("100000000", "ether");
+      let target = props.term
+        ? process.env.REACT_APP_GOERLI_TERM_ADDR
+        : process.env.REACT_APP_GOERLI_INDEFINITE_ADDR;
 
-      await token.methods
-        .approve(process.env.REACT_APP_INDEFINITE_ADDR, allowance)
-        .send({ from: account });
-      await token.methods
-        .approve(process.env.REACT_APP_TERM_ADDR, allowance)
-        .send({ from: account });
-      let res = {
-        sender: account,
-        allowanceAmount: allowance,
-      };
-      dispatchResult(JSON.stringify(res));
+      let action = token.methods.approve(target, allowance);
+
+      sendTransaction(action, token, account);
     } catch (err) {
       dispatchError(err.reason);
     }
   };
 
-  const fundGiveaway = async () => {
+  // Function for funding and withdrawing from the Giveaway pool
+
+  const giveaway = async (target) => {
     try {
       dispatch({ type: "control/startLoading" });
 
-      let res = await isavings.methods
-        .fundGiveaway()
-        .send({ from: account, gas: 300000 });
+      let action;
+      if (target === "fund") action = isavings.methods.fundGiveaway();
+      if (target === "withdraw") action = isavings.methods.withdrawGiveaway();
 
-      res = res.events.LogFundGiveaway.returnValues;
-
-      dispatchResult(JSON.stringify(res));
+      sendTransaction(action, isavings, account);
     } catch (err) {
       dispatchError(err.reason);
     }
+    setGiveawayPool("");
   };
-  const withdrawGiveaway = async () => {
-    try {
-      dispatch({ type: "control/startLoading" });
 
-      let res = await isavings.methods
-        .withdrawGiveaway()
-        .send({ from: account });
+  const checkGiveaway = async () => {
+    let result = await isavings.methods.getGiveawayPool().call();
 
-      res = res.events.LogWithdrawGiveaway.returnValues;
+    result = normalizeNumber(result);
 
-      dispatchResult(JSON.stringify(res));
-    } catch (err) {
-      dispatchError(err.reason);
-    }
+    setGiveawayPool(result);
+  };
+  const checkFunds = async () => {
+    let target = props.term ? tsavings : isavings;
+    let result = await target.methods.getBalance().call({ from: account });
+    result = normalizeNumber(result);
+    setBalance(result);
   };
 
   return (
@@ -158,20 +168,22 @@ const OwnerPanel = (props) => {
                 step="0.01"
                 min="0"
                 type="number"
-                ref={withdrawRef}
+                value={withdraw}
+                onChange={(e) => setWithdraw(e.target.value)}
               ></input>
 
               <input
                 className={classes.input}
                 placeholder="Address to withdraw to:"
                 type="string"
-                ref={withAddrRef}
+                value={withAddr}
+                onChange={(e) => setWithAddr(e.target.value)}
               ></input>
 
               <button
                 disabled={loading}
                 className={classes.button}
-                onClick={withdrawFunds}
+                onClick={() => fundAndWithdraw("withdraw")}
               >
                 Withdraw funds
               </button>
@@ -182,24 +194,47 @@ const OwnerPanel = (props) => {
                 step="0.01"
                 min="0"
                 type="number"
-                ref={depositRef}
+                value={inputAmount}
+                onChange={(e) => setInputAmount(e.target.value)}
               ></input>
 
               <button
                 disabled={loading}
                 className={classes.button}
-                onClick={fundContract}
+                onClick={() => fundAndWithdraw("deposit")}
               >
                 Fund the contract
               </button>
               <button className={classes.button} onClick={giveAllowance}>
                 Give Max Allowance
               </button>
-              <button className={classes.button} onClick={fundGiveaway}>
+              <button
+                className={`${classes.button} ${classes.giveawayButton}`}
+                onClick={checkGiveaway}
+              >
+                {`${
+                  !giveawayPool
+                    ? "Check giveaway"
+                    : `${giveawayPool} SAT Tokens`
+                }`}
+              </button>
+              <button
+                className={`${classes.button} ${classes.fundsButton}`}
+                onClick={checkFunds}
+              >
+                {`${!balance ? "Check balance" : `${balance} SAT Tokens`}`}
+              </button>
+              <button
+                className={`${classes.button} ${classes.fundButton}`}
+                onClick={() => giveaway("fund")}
+              >
                 Fund Giveaway
               </button>
-              <button className={classes.button} onClick={withdrawGiveaway}>
-                Withdraw Giveaway funds
+              <button
+                className={`${classes.button} ${classes.withdrawButton}`}
+                onClick={() => giveaway("withdraw")}
+              >
+                Withdraw Giveaway
               </button>
             </main>
           </div>

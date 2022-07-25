@@ -1,14 +1,23 @@
 import React, { useContext } from "react";
 import classes from "./../styles/Stop.module.css";
+
 import ConnContext from "./Conn-context";
+
 import { useDispatch, useSelector } from "react-redux";
-import { dispatchError, dispatchResult } from "../utils";
+
+import { checkIsStaker, dispatchError, fireInputError } from "../utils/utils";
+import sendTransaction from "../utils/sendTransaction";
 
 const selectLoading = (state) => state.control.loading;
 
 const Stop = (props) => {
   const dispatch = useDispatch();
+
+  //setting Redux states with the Selector
+
   const loading = useSelector(selectLoading);
+
+  //consuming context
 
   const { account, tsavings } = useContext(ConnContext);
 
@@ -18,12 +27,12 @@ const Stop = (props) => {
     try {
       dispatch({ type: "control/startLoading" });
 
-      let res = await tsavings.methods
-        .stopSavings()
-        .send({ from: account, gas: 3000000 });
-      res = res.events.LogRemDeposit.returnValues;
+      if (!(await checkIsStaker(tsavings, account)))
+        fireInputError("You are not a registered staker.");
 
-      dispatchResult(JSON.stringify(res));
+      let action = await tsavings.methods.stopSavings();
+
+      sendTransaction(action, tsavings, account);
     } catch (err) {
       dispatchError(err.reason);
     }
@@ -34,8 +43,8 @@ const Stop = (props) => {
       <span className={classes.title}>Stop your savings</span>
 
       <p className={classes.text}>
-        WARNING! Stoping term savings early can bring penalties and fees as well
-        as reward loss!
+        WARNING! Stoping term savings early will bring penalties as well as
+        reward loss!
       </p>
 
       <button

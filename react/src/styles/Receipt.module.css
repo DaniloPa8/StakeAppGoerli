@@ -31,7 +31,7 @@
   z-index: 50;
   border: solid 0.2rem rgba(0, 255, 21, 1);
   background-color: white;
-  width: 500px;
+  width: auto;
   height: flex;
   border-radius: 45px;
 
@@ -90,6 +90,10 @@
 }
 .success:hover {
   background-color: green;
+}
+.etherscan_link {
+  text-decoration: underline;
+  color: green;
 }
 @media screen and (max-width: 1000px) {
   .modal {

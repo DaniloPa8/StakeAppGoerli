@@ -23,9 +23,10 @@ const Manual = (props) => {
               <p>
                 To start app intreaction, user should go to the Token modal, and
                 get some tokens from the giveaway (which is available once every
-                24h per address). Also it is REQUIRED to give allowance to the
-                contract, the amount of which depends on how much you want to
-                stake.
+                24h per address), small amount of Goerli tesnet ETH is also
+                required which can be obtained at one of many faucets available.
+                Also it is REQUIRED to give allowance to the contract, the
+                amount of which depends on how much you want to stake.
               </p>
               <p>
                 Upon selecting the 'start savings' option User can decide upon
@@ -44,7 +45,7 @@ const Manual = (props) => {
                 User needs to choose their savings method, value and period of
                 lockup if needed. Savings can be started with 'start savings'
                 button. User can then check on their current savings by opening
-                the 'get savings' section, where all details can be found.
+                the 'get savings' section, where all details can be retrived.
               </p>
               <p>
                 When in term savings User can withdraw their funds+reward after

@@ -1,16 +1,23 @@
 import React, { useContext } from "react";
 import classes from "./../styles/GetSavings.module.css";
+
 import ConnContext from "./Conn-context";
+
 import TermSelector from "./TermSelector";
+
 import { useDispatch, useSelector } from "react-redux";
-import { dispatchError, dispatchResult } from "../utils";
+
+import { checkIsStaker, dispatchError, fireInputError } from "../utils/utils";
+import sendTransaction from "../utils/sendTransaction";
 
 const selectLoading = (state) => state.control.loading;
 
 const GetSavings = (props) => {
   const dispatch = useDispatch();
 
-  const loading = useSelector(selectLoading); // getting the state from redux
+  //setting Redux states with the Selector
+
+  const loading = useSelector(selectLoading);
 
   const { account, tsavings, isavings } = useContext(ConnContext); // consuming the context
 
@@ -21,12 +28,12 @@ const GetSavings = (props) => {
       dispatch({ type: "control/startLoading" });
       let target = props.term ? tsavings : isavings;
 
-      let res = await target.methods
-        .getDeposit()
-        .send({ from: account, gas: 300000 });
-      res = res.events.LogGetDeposit.returnValues;
+      if (!(await checkIsStaker(target, account)))
+        fireInputError("You are not a staker.");
 
-      dispatchResult(JSON.stringify(res));
+      let action = await target.methods.getDeposit();
+
+      sendTransaction(action, target, account);
     } catch (err) {
       dispatchError(err.reason);
     }

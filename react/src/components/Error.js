@@ -2,16 +2,14 @@ import React from "react";
 import classes from "./../styles/Error.module.css";
 import { useDispatch, useSelector } from "react-redux";
 
-const errorSelector = (state) => state.data.errorData.message;
-const errCode = (state) => state.data.errorData.code;
+const errorData = (state) => state.data.errorData;
 
 const Error = (props) => {
   const dispatch = useDispatch();
 
-  // getting state from redux
+  //setting Redux states with the Selector
 
-  const errorMessage = useSelector(errorSelector);
-  const errorCode = useSelector(errCode);
+  const errorTxData = useSelector(errorData);
 
   // helper function for closing the error modal
   // and reseting the data to null
@@ -37,10 +35,21 @@ const Error = (props) => {
               <p className={classes.headText}>
                 Transaction has encountered an error. Error has the message of:
               </p>
-              <p className={classes.error_text}>{errorMessage}</p>
+              <p className={classes.error_text}>{errorTxData.message}</p>
               {process.env.REACT_APP_ENVIROMENT === "development" && (
-                <p>{`Error code provided: ${errorCode}`}</p>
+                <p>{`Error code provided: ${errorTxData.code}`}</p>
               )}
+              <div className={classes.eth_div}>
+                {errorTxData.txHash && (
+                  <a
+                    className={classes.etherscan_link}
+                    href={`https://goerli.etherscan.io/tx/${errorTxData.txHash}`}
+                    target={"_blank"}
+                  >
+                    Check transaction details here!
+                  </a>
+                )}
+              </div>
             </main>
           </div>
         </>

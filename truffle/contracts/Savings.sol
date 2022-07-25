@@ -99,19 +99,18 @@ contract TermSavings is Ownable{
    
     // @dev defining events which are used for front-end feedback
 
-    event LogNewDeposit(address sender, uint8 plan, uint256 value, uint256 depositTime, uint256 withdrawalTime, uint256 totalIntrest);
-    event LogRemDeposit(address sender,uint256 withdrawnValue, uint256 time);
-    event LogWthDeposit(address sender, uint256 value, uint256 totalIntrest, uint256 time);
-    event LogGetDeposit(address sender,  uint256 value, uint8 plan, uint256 depositTime, uint256 withdrawalTime,uint256 totalIntrest,  uint256 time);
-    event LogIsStaker(address sender, bool result);
-    event LogOwnerDeposit(address sender, uint256 value);
+    event LogNewDeposit(address sender, uint8 plan, uint256 depositedValue, uint256 depositTime, uint256 withdrawalTime, uint256 totalIntrest);
+    event LogRemDeposit(address sender,uint256 withdrawnValue,uint256 depositedValue, uint256 time);
+    event LogWthDeposit(address sender, uint256 depositedValue, uint256 totalIntrest, uint256 time);
+    event LogGetDeposit(address sender,  uint256 depositedValue, uint8 plan, uint256 depositTime, uint256 withdrawalTime,uint256 totalIntrest,  uint256 time);
+    event LogOwnerDeposit(address sender, uint256 fundedValue);
     event LogOwnerWithdraw(address sender, uint256 withdrawnValue);
     
     // @dev a helper function for checking if the address is already a registered staker
 
-    function isStaker () internal  {
+    function isStaker () public view returns (bool)  {
         require(depositSet.exists(msg.sender), "5001 | This address is not a registered staker.");
-        emit LogIsStaker(msg.sender, depositSet.exists(msg.sender) );
+        return true;
     }
 
     // @dev a helper function for returning the contract balance
@@ -125,7 +124,6 @@ contract TermSavings is Ownable{
 
     function newDeposit(uint8 _plan, uint256 _amount) external {
         require (_plan == 1 || _plan == 2 || _plan == 3, "5004 | Plan selected is out of range."); 
-        // require(msg.value > 0 && msg.value < 50000000000000000000, "5005 | You can only deposit between 1 and 50 ETH");
         require(!depositSet.exists(msg.sender), "4001 | You are already a registered staker.");
         
         _token.transferFrom(msg.sender, address(this), _amount);
@@ -168,10 +166,8 @@ contract TermSavings is Ownable{
 
         _token.approve(reciver, d.value - ((d.value/100) * 5));
         _token.transfer(reciver, d.value - ((d.value/100) * 5));
-       
-        // reciver.transfer(d.value - ((d.value/100) * 5)); // User loses all the intrest plus 5% of his own funds for violating the term
-       
-        emit LogRemDeposit(msg.sender, d.value - ((d.value/100) * 5), block.timestamp );
+              
+        emit LogRemDeposit(msg.sender, d.value - ((d.value/100) * 5), d.value, block.timestamp );
 
         depositSet.remove(msg.sender); 
         delete deposits[msg.sender];
@@ -199,8 +195,6 @@ contract TermSavings is Ownable{
 
         address reciver = msg.sender;
 
-        // reciver.transfer(d.totalIntrest);
-
         _token.approve(reciver, d.totalIntrest);
         _token.transfer(reciver, d.totalIntrest);
             
@@ -212,9 +206,6 @@ contract TermSavings is Ownable{
 
      function withdrawContractFunds (address  _reciver, uint256 _value) external onlyOwner {
         
-        // require(_value > 0 && _value < address(this).balance, "5005 | No funds available or wrong value input." );
-
-        // _reciver.transfer(_value);
         _token.approve(_reciver, _value);
         _token.transfer(_reciver, _value);
 
@@ -222,8 +213,6 @@ contract TermSavings is Ownable{
     }
     function fundContract(uint256 _amount) external  onlyOwner {
 
-        // require(msg.value > 0 && msg.value < address(msg.sender).balance, "5005 | No funds available or wrong value input." );
-        
         _token.transferFrom(msg.sender,address(this), _amount);
 
         emit LogOwnerDeposit(msg.sender, _amount);
@@ -257,32 +246,33 @@ contract IndefiniteSavings is Ownable{
     // @dev helper function to get the contract
 
     function getBalance  () external view returns (uint256) {
-        return address(this).balance;
+       return _token.balanceOf(address(this)); 
+    }
+    function getGiveawayPool () external view returns (uint256) {
+        return giveawayPool;
     }
 
     // @dev a helper function for checking if the address is already a registered staker
 
-    function isStaker () internal {
+    function isStaker () public view returns(bool) {
         require(depositSet.exists(msg.sender), "5001 | This address is not a registered staker.");
-        emit LogIsStaker((msg.sender), depositSet.exists(msg.sender));
+        return true;
     }
 
     // @dev defining events
 
-    event LogWthDeposit (address sender,  uint256 value,uint256 totalIntrest, uint256 time);
-    event LogNewDeposit (address sender,  uint256 value, uint256 depositTime);
-    event LogGetDeposit(address sender,  uint256 value, uint256 depositTime, uint256 time);
-    event LogIsStaker(address sender, bool result);
-    event LogOwnerDeposit(address sender, uint256 value);
+    event LogWthDeposit (address sender,  uint256 depositedValue,uint256 totalIntrest, uint256 time);
+    event LogNewDeposit (address sender,  uint256 depositedValue, uint256 depositTime);
+    event LogGetDeposit(address sender,  uint256 depositedValue, uint256 depositTime, uint256 time);
+    event LogOwnerDeposit(address sender, uint256 fundedValue);
     event LogOwnerWithdraw(address sender, uint256 withdrawnValue);
     event LogGiveaway(address sender, uint256 giveawayValue);
     event LogFundGiveaway(address sender, uint256 giveawayFunds);
-    event LogWithdrawGiveaway(address sender);
+    event LogWithdrawGiveaway(address sender, uint256 giveawayAmount);
     // @dev function for starting new savings
 
     function newDeposit(uint256 _amount) external  {
        
-        // require(msg.value > 0 && msg.value < 50000000000000000000, "5005 | You can only deposit between 1 and 50 ETH");
         require(!depositSet.exists(msg.sender), "4001 | You are already a registered staker.");
 
         _token.transferFrom(msg.sender,address(this), _amount);
@@ -313,9 +303,7 @@ contract IndefiniteSavings is Ownable{
         uint256 totalIntrest = d.value + ((block.timestamp - d.depositTime) * ( (d.value / 100) / 2629743)); // @dev calculating total amount for payout, intrest per second
         
         uint256 time = block.timestamp;
-        
-        // address payable reciver = payable(msg.sender);
-        // reciver.transfer(totalIntrest);
+     
         address reciver = msg.sender;
         _token.approve(reciver, totalIntrest);
         _token.transfer(reciver, totalIntrest);
@@ -328,10 +316,6 @@ contract IndefiniteSavings is Ownable{
 
     function withdrawContractFunds (address _reciver, uint256 _value) external  onlyOwner {
     
-        // require(_value > 0 && _value < address(this).balance, "5005 | No funds available or wrong value input." );
-    
-        // _reciver.transfer(_value);
-    
         _token.approve(_reciver, _value);
         _token.transfer(_reciver, _value);
         
@@ -339,29 +323,30 @@ contract IndefiniteSavings is Ownable{
     }
     function fundContract(uint256 _amount) external  onlyOwner {
     
-        // require(msg.value > 0 && msg.value < address(msg.sender).balance, "5005 | No funds available or wrong value input.");
         _token.transferFrom(msg.sender,address(this), _amount);
         emit LogOwnerDeposit(msg.sender, _amount);       
     }
-    function givaway() external {
-        require(giveawayPool >10000000000000000000, "9005 | No funds in giveaway pool" );
+    function giveaway() external {
+        require(giveawayPool >100000000000000000000, "9005 | No funds in giveaway pool" );
         address reciver = msg.sender;
-        _token.approve(reciver,10000000000000000000 );
-        _token.transfer(reciver,10000000000000000000);
+        _token.approve(reciver,100000000000000000000 );
+        _token.transfer(reciver,100000000000000000000);
+        giveawayPool = giveawayPool - 100000000000000000000;
 
-        emit LogGiveaway(msg.sender, 10000000000000000000);
+        emit LogGiveaway(msg.sender, 100000000000000000000);
     }
     function fundGiveaway() external onlyOwner {
-        _token.transferFrom(msg.sender, address(this), 1000000000000000000000);
-        giveawayPool = giveawayPool + 1000000000000000000000;
+        _token.transferFrom(msg.sender, address(this), 10000000000000000000000);
+        giveawayPool = giveawayPool + 10000000000000000000000;
 
         emit LogFundGiveaway(msg.sender, giveawayPool);
     }
     function withdrawGiveaway() external onlyOwner {
         _token.approve(msg.sender, giveawayPool);
         _token.transfer(msg.sender, giveawayPool);
+        uint256 withdrawn = giveawayPool;
         giveawayPool = 0;
         
-        emit LogWithdrawGiveaway(msg.sender);
+        emit LogWithdrawGiveaway(msg.sender, withdrawn);
     }
 }

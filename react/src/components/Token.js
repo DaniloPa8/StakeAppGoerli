@@ -1,131 +1,126 @@
-import React, { useState, useContext, useRef, useEffect } from "react";
-import classes from "./../styles/OwnerPanel.module.css";
+import React, { useState, useContext, useEffect } from "react";
+import classes from "./../styles/Token.module.css";
+
 import ConnContext from "./Conn-context";
-import web3 from "web3";
 import TermSelector from "./TermSelector";
-import db from "./../firebase";
+
+import web3 from "web3";
 import {
-  collection,
-  addDoc,
-  getDocs,
-  doc,
-  deleteDoc,
-} from "firebase/firestore";
-import errors from "web3-core-helpers";
-import { dispatchError, dispatchResult, checkInputs } from "../utils";
+  dispatchError,
+  checkInputs,
+  filterAndDelete,
+  checkGiveaway,
+  fireInputError,
+  normalizeNumber,
+} from "../utils/utils";
+import sendTransaction from "../utils/sendTransaction";
+
+import db from "./../firebase";
+import { addDoc, collection } from "firebase/firestore";
+
 import { useDispatch, useSelector } from "react-redux";
 
-const selectLoading = (state) => state.control.loading;
-const inputError = errors.errors.RevertInstructionError; // loading up error from web3-core-helpers to have uniform error format across the whole app
+// Setting database, state slice and a custom inputError
 
+const selectLoading = (state) => state.control.loading;
 const userRef = collection(db, "Giveaway");
+
 const Token = (props) => {
   const dispatch = useDispatch();
 
+  //setting Redux states with the Selector
+
   const loading = useSelector(selectLoading);
 
-  const { account, token, isavings } = useContext(ConnContext);
+  const { account, token, isavings, tsavings } = useContext(ConnContext); // consuming the context
+
+  // setting state
 
   const [disableButton, setDisableButton] = useState(false);
-  const [balance, setBalance] = useState(0);
-  let users = [];
-  let currentUser = {};
+  const [balance, setBalance] = useState(null);
+  const [allowanceCheck, setAllowanceCheck] = useState(null);
 
-  const depositRef = useRef();
+  const [allowance, setAllowance] = useState();
+
+  // useEffect for filtering the databse when component mounts
 
   useEffect(
     () => async () => {
-      await filterAndDelete();
+      if (await filterAndDelete(account)) setDisableButton(true);
     },
     []
   );
+  useEffect(() => {
+    setAllowanceCheck("");
+    setBalance("");
+  }, [props.term]);
 
-  const filterAndDelete = async () => {
-    // Setting the data after filtering to get the current state
-    const data = await getDocs(userRef);
-    users = data.docs.map((doc) => ({ ...doc.data(), id: doc.id }));
-
-    let usersForDeletion = [];
-
-    // Filtering the retrived documents to remove expired ones
-    users.forEach((el, i) => {
-      if (el.withdrawalTime < Date.now() / 1000 - 60) {
-        usersForDeletion.push(el);
-        users.splice(i, 1);
-      }
-    });
-
-    //Removing expired ones
-    for (const el of usersForDeletion) {
-      const userDoc = doc(db, "Giveaway", el.id);
-      await deleteDoc(userDoc);
-    }
-
-    // Setting the current user from the remaining users, if present
-    currentUser = users.find(
-      (el) => el.address.toLowerCase() === account.toString()
-    );
-    if (currentUser) {
-      setDisableButton(true);
-    }
-  };
-
-  // function for calling the blockchain backend and funding the contract
+  // function for calling the blockchain backend and giving allowance to the contract
 
   const giveAllowance = async () => {
     let address = props.term
-      ? process.env.REACT_APP_TERM_ADDR
-      : process.env.REACT_APP_INDEFINITE_ADDR;
+      ? process.env.REACT_APP_GOERLI_TERM_ADDR
+      : process.env.REACT_APP_GOERLI_INDEFINITE_ADDR;
     try {
       dispatch({ type: "control/startLoading" });
 
-      let amount = depositRef.current.value;
+      if (!checkInputs(allowance)) fireInputError("Invalid inputs.");
 
-      if (!checkInputs(amount))
-        throw inputError("Invalid inputs.", "Error(String)");
+      let amount = web3.utils.toWei(allowance, "ether");
 
-      amount = web3.utils.toWei(amount, "ether");
+      let action = token.methods.approve(address, amount);
 
-      await token.methods.approve(address, amount).send({ from: account });
-
-      let res = {
-        sender: account,
-        allowanceAmount: amount,
-      };
-
-      dispatchResult(JSON.stringify(res));
+      sendTransaction(action, token, account);
     } catch (err) {
       dispatchError(err.reason);
     }
-    depositRef.current.value = "";
+    setAllowance("");
+    setAllowanceCheck("");
   };
+
+  // function for getting giveaway funds
 
   const giveawayHandler = async () => {
     dispatch({ type: "control/startLoading" });
-    await filterAndDelete();
 
     try {
-      if (currentUser) {
-        throw inputError("7005 | Only one givaway is available every 24h.");
-      } else {
-        await addDoc(userRef, {
-          address: account,
-          withdrawalTime: Math.floor(Date.now() / 1000),
-          attempts: 0,
-        });
-        let res = await isavings.methods.givaway().send({ from: account });
-        res = res.events.LogGiveaway.returnValues;
-
-        dispatchResult(JSON.stringify(res));
+      if (await filterAndDelete(account)) {
+        setDisableButton(true);
+        fireInputError("Only one givaway is available every 24h per user.");
       }
+
+      if (!(await checkGiveaway(isavings)))
+        fireInputError(
+          "No giveaway funds currently available, try again later."
+        );
+
+      await addDoc(userRef, {
+        address: account,
+        withdrawalTime: Math.floor(Date.now() / 1000),
+        attempts: 0,
+      });
+
+      let action = isavings.methods.giveaway();
+
+      sendTransaction(action, isavings, account);
     } catch (err) {
       dispatchError(err.reason);
     }
+    setBalance("");
   };
+
+  // quick balance call to contract
 
   const balanceHanlder = async () => {
     let res = await token.methods.balanceOf(account).call({ from: account });
-    setBalance(web3.utils.fromWei(res, "ether"));
+    res = normalizeNumber(res);
+    setBalance(res);
+  };
+  const allowanceHandler = async () => {
+    let target = props.term ? tsavings : isavings;
+    let res = await token.methods.allowance(account, target._address).call();
+    res = normalizeNumber(res);
+    setAllowanceCheck(res);
   };
 
   return (
@@ -150,43 +145,51 @@ const Token = (props) => {
               <TermSelector setTerm={props.setTerm} term={props.term} />
 
               <input
-                className={classes.input}
+                className={`${classes.inputAllowance} ${classes.input}`}
                 placeholder="Amount of tokens to allow to the contract: 1 - 1000"
                 step="0.01"
                 min="0"
                 max="1000"
                 type="number"
-                ref={depositRef}
+                value={allowance}
+                onChange={(e) => setAllowance(e.target.value)}
               ></input>
 
               <button
                 disabled={loading}
-                className={classes.button}
+                className={`${classes.button} ${classes.buttonAllowance}`}
                 onClick={giveAllowance}
               >
                 Give allowance
               </button>
 
-              <button onClick={balanceHanlder} className={classes.button}>{`${
-                balance === 0 ? "Check my balance" : `${balance} SAT Tokens`
+              <button
+                onClick={balanceHanlder}
+                className={`${classes.button} ${classes.buttonCheckAllowance}`}
+              >{`${
+                balance === "" ? "Check my balance" : `${balance} SAT Tokens`
+              }`}</button>
+              <button
+                onClick={allowanceHandler}
+                className={`${classes.button} ${classes.buttonCheckBalance}`}
+              >{`${
+                allowanceCheck === ""
+                  ? "Check my allowance"
+                  : `${allowanceCheck} SAT Tokens`
               }`}</button>
 
               {/* GIVEAWAY */}
 
-              <p className={classes.text}>
+              <p className={`${classes.text} ${classes.textGiveaway}`}>
                 Everyone is able to get 100 tokens a day from the giveaway!
               </p>
               <button
-                className={classes.button}
+                className={`${classes.button} ${classes.buttonGiveaway}`}
                 onClick={giveawayHandler}
                 disabled={disableButton}
               >
-                {" "}
-                CLAIM{" "}
+                CLAIM GIVEAWAY
               </button>
-              {disableButton && (
-                <p className={classes.text}>Try again after 24h expires.</p>
-              )}
             </main>
           </div>
         </>
