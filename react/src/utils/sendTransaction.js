@@ -41,14 +41,14 @@ const sendTransaction = async (action, target, account) => {
   // Querying for block number until it is available
   const getBlockNumber = (txHash) => {
     store.dispatch({ type: "control/stopWaitingForInput" });
-    Eth.getTransactionReceipt(txHash, async (error, recipt) => {
+    Eth.getTransactionReceipt(txHash, async (error, receipt) => {
       if (error) {
         dispatchError();
-      } else if (recipt === null) {
+      } else if (receipt === null) {
         setTimeout(() => getBlockNumber(txHash), 500);
-      } else if (recipt.status === true) {
-        await getEvents(recipt.blockNumber, txHash, 0);
-      } else if (recipt.status === false) {
+      } else if (receipt.status === true) {
+        await getEvents(receipt.blockNumber, txHash, 0);
+      } else if (receipt.status === false) {
         dispatchError({
           message: "Transacion has reverted. Check Etherscan for more info.",
           txHash,
